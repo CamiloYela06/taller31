@@ -3,15 +3,8 @@ const ctx = canvas.getContext("2d");
 
 
 /* =====================================================
-   CONSTANTES DE REGIÓN (4 BITS)
-   =====================================================
-
-   TOP    = 1000
-   BOTTOM = 0100
-   RIGHT  = 0010
-   LEFT   = 0001
-
-===================================================== */
+   CONSTANTES DE REGIÓN
+   ===================================================== */
 
 const INSIDE = 0;
 const LEFT = 1;
@@ -21,7 +14,7 @@ const TOP = 8;
 
 
 /* =====================================================
-   DIBUJAR VENTANA DE RECORTE
+   DIBUJAR VIEWPORT
    ===================================================== */
 
 function drawViewport(xmin, ymin, xmax, ymax){
@@ -38,42 +31,42 @@ function drawViewport(xmin, ymin, xmax, ymax){
 
 
 /* =====================================================
+   DIBUJAR LÍNEA
+   ===================================================== */
+
+function drawLine(x1, y1, x2, y2, color){
+
+    ctx.beginPath();
+
+    ctx.strokeStyle = color;
+
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+
+    ctx.stroke();
+}
+
+
+/* =====================================================
    CALCULAR CÓDIGO DE REGIÓN
-   =====================================================
-
-   Cada punto recibe un código binario de 4 bits
-   dependiendo de su posición respecto a la ventana.
-
-===================================================== */
+   ===================================================== */
 
 function computeCode(x, y, xmin, ymin, xmax, ymax){
 
     let code = INSIDE;
 
-    /*
-    Verificar izquierda
-    */
     if(x < xmin){
         code |= LEFT;
     }
 
-    /*
-    Verificar derecha
-    */
     else if(x > xmax){
         code |= RIGHT;
     }
 
-    /*
-    Verificar arriba
-    */
     if(y < ymin){
         code |= TOP;
     }
 
-    /*
-    Verificar abajo
-    */
     else if(y > ymax){
         code |= BOTTOM;
     }
@@ -83,7 +76,53 @@ function computeCode(x, y, xmin, ymin, xmax, ymax){
 
 
 /* =====================================================
-   RENDERIZAR ESCENA
+   ACEPTACIÓN Y RECHAZO TRIVIAL
+   ===================================================== */
+
+function trivialTest(x1,y1,x2,y2,
+                     xmin,ymin,xmax,ymax){
+
+    let code1 = computeCode(
+        x1,y1,
+        xmin,ymin,xmax,ymax
+    );
+
+    let code2 = computeCode(
+        x2,y2,
+        xmin,ymin,xmax,ymax
+    );
+
+    /*
+    ACEPTACIÓN TRIVIAL
+
+    Si ambos códigos son 0000:
+    toda la línea está dentro
+    */
+    if((code1 | code2) === 0){
+
+        return "accept";
+    }
+
+    /*
+    RECHAZO TRIVIAL
+
+    Si comparten bits externos:
+    la línea está completamente fuera
+    */
+    if((code1 & code2) !== 0){
+
+        return "reject";
+    }
+
+    /*
+    Línea parcialmente visible
+    */
+    return "partial";
+}
+
+
+/* =====================================================
+   RENDERIZAR
    ===================================================== */
 
 function render(){
@@ -98,35 +137,81 @@ function render(){
     drawViewport(xmin,ymin,xmax,ymax);
 
     /*
-    Puntos de prueba
+    Línea de prueba
     */
-    let p1 = {x:50, y:50};
-    let p2 = {x:500, y:300};
+    let line = {
+
+        x1:50,
+        y1:50,
+
+        x2:500,
+        y2:300
+    };
 
     /*
-    Calcular códigos
+    Dibujar línea original
     */
-    let code1 = computeCode(
-        p1.x,p1.y,
-        xmin,ymin,xmax,ymax
-    );
-
-    let code2 = computeCode(
-        p2.x,p2.y,
-        xmin,ymin,xmax,ymax
+    drawLine(
+        line.x1,
+        line.y1,
+        line.x2,
+        line.y2,
+        "gray"
     );
 
     /*
-    Mostrar información
+    Evaluar línea
+    */
+    let result = trivialTest(
+
+        line.x1,
+        line.y1,
+
+        line.x2,
+        line.y2,
+
+        xmin,
+        ymin,
+        xmax,
+        ymax
+    );
+
+    /*
+    Mostrar resultado
     */
     document.getElementById("info").innerHTML =
 
-        "P1 Código: " +
-        code1.toString(2).padStart(4,"0")
-        +
+        "Resultado: " + result;
 
-        "<br>P2 Código: " +
-        code2.toString(2).padStart(4,"0");
+    /*
+    Si se acepta trivialmente,
+    dibujar resaltada
+    */
+    if(result === "accept"){
+
+        drawLine(
+            line.x1,
+            line.y1,
+            line.x2,
+            line.y2,
+            "green"
+        );
+    }
+
+    /*
+    Si se rechaza trivialmente,
+    mostrar en rojo
+    */
+    else if(result === "reject"){
+
+        drawLine(
+            line.x1,
+            line.y1,
+            line.x2,
+            line.y2,
+            "red"
+        );
+    }
 }
 
 
