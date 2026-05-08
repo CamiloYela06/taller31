@@ -175,6 +175,30 @@ function render(){
         xmax,
         ymax
     );
+    let code1 = computeCode(
+    line.x1,line.y1,
+    xmin,ymin,xmax,ymax
+);
+
+let code2 = computeCode(
+    line.x2,line.y2,
+    xmin,ymin,xmax,ymax
+);
+
+let outside = getOutsideCode(code1, code2);
+    /* =====================================================
+   SELECCIONAR PUNTO EXTERNO
+   ===================================================== */
+
+function getOutsideCode(code1, code2){
+
+    /*
+    Se selecciona el punto que esté fuera
+    de la ventana de recorte.
+    */
+
+    return code1 !== 0 ? code1 : code2;
+}
 
     /*
     Mostrar resultado
