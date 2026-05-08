@@ -46,6 +46,75 @@ let escenaActual = 0;
 
 
 /* =====================================================
+   LIMPIAR CANVAS
+   ===================================================== */
+
+function clearCanvas(){
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+}
+
+
+/* =====================================================
+   OBTENER DATOS DEL HTML
+   ===================================================== */
+
+function getInputs(){
+
+    return {
+
+        xmin: Number(
+            document.getElementById("xmin").value
+        ),
+
+        ymin: Number(
+            document.getElementById("ymin").value
+        ),
+
+        xmax: Number(
+            document.getElementById("xmax").value
+        ),
+
+        ymax: Number(
+            document.getElementById("ymax").value
+        )
+    };
+}
+
+
+/* =====================================================
+   MOSTRAR INFORMACIÓN
+   ===================================================== */
+
+function showInfo(result){
+
+    document.getElementById("info").innerHTML =
+
+        "Escena: " + (escenaActual + 1)
+
+        +
+
+        "<br>Codigo P1: " +
+        result.code1.toString(2).padStart(4,"0")
+
+        +
+
+        "<br>Codigo P2: " +
+        result.code2.toString(2).padStart(4,"0")
+
+        +
+
+        "<br>Aceptada: " +
+        result.accept;
+}
+
+
+/* =====================================================
    DIBUJAR VIEWPORT
    ===================================================== */
 
@@ -81,13 +150,7 @@ function drawLine(x1, y1, x2, y2, color){
 
 /* =====================================================
    CALCULAR CÓDIGO DE REGIÓN
-   =====================================================
-
-   Cada punto recibe un código binario
-   dependiendo de su posición respecto
-   a la ventana de recorte.
-
-===================================================== */
+   ===================================================== */
 
 function computeCode(x, y, xmin, ymin, xmax, ymax){
 
@@ -103,7 +166,7 @@ function computeCode(x, y, xmin, ymin, xmax, ymax){
     /*
     DERECHA
     */
-    else if(x > xmax){
+    if(x > xmax){
         code |= RIGHT;
     }
 
@@ -117,7 +180,7 @@ function computeCode(x, y, xmin, ymin, xmax, ymax){
     /*
     ABAJO
     */
-    else if(y > ymax){
+    if(y > ymax){
         code |= BOTTOM;
     }
 
@@ -154,8 +217,6 @@ function cohenSutherland(
 
         /*
         ACEPTACIÓN TRIVIAL
-
-        Ambos puntos están dentro.
         */
         if((code1 | code2) === 0){
 
@@ -165,8 +226,6 @@ function cohenSutherland(
 
         /*
         RECHAZO TRIVIAL
-
-        Ambos puntos comparten una región externa.
         */
         else if(code1 & code2){
 
@@ -182,7 +241,7 @@ function cohenSutherland(
             let x, y;
 
             /*
-            Seleccionar punto externo.
+            Seleccionar punto externo
             */
             codeOut = code1 ? code1 : code2;
 
@@ -232,7 +291,6 @@ function cohenSutherland(
 
             /*
             Reemplazar punto externo
-            por la nueva intersección.
             */
             if(codeOut === code1){
 
@@ -261,9 +319,14 @@ function cohenSutherland(
     }
 
     return {
+
         accept,
-        x1,y1,x2,y2,
-        code1,code2
+
+        x1,y1,
+        x2,y2,
+
+        code1,
+        code2
     };
 }
 
@@ -274,28 +337,28 @@ function cohenSutherland(
 
 function render(){
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    let xmin = Number(
-        document.getElementById("xmin").value
-    );
-
-    let ymin = Number(
-        document.getElementById("ymin").value
-    );
-
-    let xmax = Number(
-        document.getElementById("xmax").value
-    );
-
-    let ymax = Number(
-        document.getElementById("ymax").value
-    );
-
-    drawViewport(xmin,ymin,xmax,ymax);
+    /*
+    Limpiar canvas
+    */
+    clearCanvas();
 
     /*
-    Obtener escena actual
+    Obtener ventana desde HTML
+    */
+    const {xmin, ymin, xmax, ymax} = getInputs();
+
+    /*
+    Dibujar viewport
+    */
+    drawViewport(
+        xmin,
+        ymin,
+        xmax,
+        ymax
+    );
+
+    /*
+    Obtener línea actual
     */
     let line = escenas[escenaActual];
 
@@ -345,24 +408,7 @@ function render(){
     /*
     Mostrar información
     */
-    document.getElementById("info").innerHTML =
-
-        "Escena: " + (escenaActual + 1)
-
-        +
-
-        "<br>Codigo P1: " +
-        result.code1.toString(2).padStart(4,"0")
-
-        +
-
-        "<br>Codigo P2: " +
-        result.code2.toString(2).padStart(4,"0")
-
-        +
-
-        "<br>Aceptada: " +
-        result.accept;
+    showInfo(result);
 }
 
 
