@@ -3,14 +3,46 @@ const ctx = canvas.getContext("2d");
 
 
 /* =====================================================
-   CONSTANTES DE REGIÓN
-   ===================================================== */
+   CONSTANTES DE REGIÓN (TBRL)
+   =====================================================
+
+   TOP    = 1000
+   BOTTOM = 0100
+   RIGHT  = 0010
+   LEFT   = 0001
+
+===================================================== */
 
 const INSIDE = 0;
 const LEFT = 1;
 const RIGHT = 2;
 const BOTTOM = 4;
 const TOP = 8;
+
+
+/* =====================================================
+   ESCENAS DE PRUEBA
+   ===================================================== */
+
+const escenas = [
+
+    // Totalmente dentro
+    {x1:150, y1:150, x2:350, y2:350},
+
+    // Totalmente fuera
+    {x1:20, y1:20, x2:80, y2:80},
+
+    // Entra por izquierda
+    {x1:50, y1:200, x2:300, y2:200},
+
+    // Sale por derecha
+    {x1:250, y1:250, x2:500, y2:300},
+
+    // Cruza completamente
+    {x1:50, y1:500, x2:550, y2:100}
+];
+
+let escenaActual = 0;
 
 
 /* =====================================================
@@ -49,24 +81,42 @@ function drawLine(x1, y1, x2, y2, color){
 
 /* =====================================================
    CALCULAR CÓDIGO DE REGIÓN
-   ===================================================== */
+   =====================================================
+
+   Cada punto recibe un código binario
+   dependiendo de su posición respecto
+   a la ventana de recorte.
+
+===================================================== */
 
 function computeCode(x, y, xmin, ymin, xmax, ymax){
 
     let code = INSIDE;
 
+    /*
+    IZQUIERDA
+    */
     if(x < xmin){
         code |= LEFT;
     }
 
+    /*
+    DERECHA
+    */
     else if(x > xmax){
         code |= RIGHT;
     }
 
+    /*
+    ARRIBA
+    */
     if(y < ymin){
         code |= TOP;
     }
 
+    /*
+    ABAJO
+    */
     else if(y > ymax){
         code |= BOTTOM;
     }
@@ -76,78 +126,178 @@ function computeCode(x, y, xmin, ymin, xmax, ymax){
 
 
 /* =====================================================
-   ACEPTACIÓN Y RECHAZO TRIVIAL
+   ALGORITMO DE COHEN-SUTHERLAND
    ===================================================== */
 
-function trivialTest(x1,y1,x2,y2,
-                     xmin,ymin,xmax,ymax){
+function cohenSutherland(
+    x1, y1,
+    x2, y2,
+    xmin, ymin,
+    xmax, ymax
+){
 
     let code1 = computeCode(
         x1,y1,
-        xmin,ymin,xmax,ymax
+        xmin,ymin,
+        xmax,ymax
     );
 
     let code2 = computeCode(
         x2,y2,
-        xmin,ymin,xmax,ymax
+        xmin,ymin,
+        xmax,ymax
     );
 
-    /*
-    ACEPTACIÓN TRIVIAL
+    let accept = false;
 
-    Si ambos códigos son 0000:
-    toda la línea está dentro
-    */
-    if((code1 | code2) === 0){
+    while(true){
 
-        return "accept";
+        /*
+        ACEPTACIÓN TRIVIAL
+
+        Ambos puntos están dentro.
+        */
+        if((code1 | code2) === 0){
+
+            accept = true;
+            break;
+        }
+
+        /*
+        RECHAZO TRIVIAL
+
+        Ambos puntos comparten una región externa.
+        */
+        else if(code1 & code2){
+
+            break;
+        }
+
+        /*
+        RECORTE PARCIAL
+        */
+        else{
+
+            let codeOut;
+            let x, y;
+
+            /*
+            Seleccionar punto externo.
+            */
+            codeOut = code1 ? code1 : code2;
+
+            /*
+            INTERSECCIÓN SUPERIOR
+            */
+            if(codeOut & TOP){
+
+                x = x1 + (x2 - x1) *
+                    (ymin - y1) / (y2 - y1);
+
+                y = ymin;
+            }
+
+            /*
+            INTERSECCIÓN INFERIOR
+            */
+            else if(codeOut & BOTTOM){
+
+                x = x1 + (x2 - x1) *
+                    (ymax - y1) / (y2 - y1);
+
+                y = ymax;
+            }
+
+            /*
+            INTERSECCIÓN DERECHA
+            */
+            else if(codeOut & RIGHT){
+
+                y = y1 + (y2 - y1) *
+                    (xmax - x1) / (x2 - x1);
+
+                x = xmax;
+            }
+
+            /*
+            INTERSECCIÓN IZQUIERDA
+            */
+            else if(codeOut & LEFT){
+
+                y = y1 + (y2 - y1) *
+                    (xmin - x1) / (x2 - x1);
+
+                x = xmin;
+            }
+
+            /*
+            Reemplazar punto externo
+            por la nueva intersección.
+            */
+            if(codeOut === code1){
+
+                x1 = x;
+                y1 = y;
+
+                code1 = computeCode(
+                    x1,y1,
+                    xmin,ymin,
+                    xmax,ymax
+                );
+            }
+
+            else{
+
+                x2 = x;
+                y2 = y;
+
+                code2 = computeCode(
+                    x2,y2,
+                    xmin,ymin,
+                    xmax,ymax
+                );
+            }
+        }
     }
 
-    /*
-    RECHAZO TRIVIAL
-
-    Si comparten bits externos:
-    la línea está completamente fuera
-    */
-    if((code1 & code2) !== 0){
-
-        return "reject";
-    }
-
-    /*
-    Línea parcialmente visible
-    */
-    return "partial";
+    return {
+        accept,
+        x1,y1,x2,y2,
+        code1,code2
+    };
 }
 
 
 /* =====================================================
-   RENDERIZAR
+   RENDERIZAR ESCENA
    ===================================================== */
 
 function render(){
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    let xmin = Number(document.getElementById("xmin").value);
-    let ymin = Number(document.getElementById("ymin").value);
-    let xmax = Number(document.getElementById("xmax").value);
-    let ymax = Number(document.getElementById("ymax").value);
+    let xmin = Number(
+        document.getElementById("xmin").value
+    );
+
+    let ymin = Number(
+        document.getElementById("ymin").value
+    );
+
+    let xmax = Number(
+        document.getElementById("xmax").value
+    );
+
+    let ymax = Number(
+        document.getElementById("ymax").value
+    );
 
     drawViewport(xmin,ymin,xmax,ymax);
-    
 
     /*
-    Línea de prueba
+    Obtener escena actual
     */
-    let line = {
-
-        x1:50,
-        y1:50,
-
-        x2:500,
-        y2:300
-    };
+    let line = escenas[escenaActual];
 
     /*
     Dibujar línea original
@@ -161,9 +311,9 @@ function render(){
     );
 
     /*
-    Evaluar línea
+    Aplicar recorte
     */
-    let result = trivialTest(
+    let result = cohenSutherland(
 
         line.x1,
         line.y1,
@@ -173,193 +323,75 @@ function render(){
 
         xmin,
         ymin,
+
         xmax,
         ymax
     );
-    let code1 = computeCode(
-    line.x1,line.y1,
-    xmin,ymin,xmax,ymax
-);
-
-let code2 = computeCode(
-    line.x2,line.y2,
-    xmin,ymin,xmax,ymax
-);
-
-let outside = getOutsideCode(code1, code2);
-    /* =====================================================
-   SELECCIONAR PUNTO EXTERNO
-   ===================================================== */
-line = updateLine(
-    line,
-    code1,
-    code2,
-    intersection
-);
-drawLine(
-    line.x1,
-    line.y1,
-    line.x2,
-    line.y2,
-    "blue"
-);
-function getOutsideCode(code1, code2){
 
     /*
-    Se selecciona el punto que esté fuera
-    de la ventana de recorte.
+    Dibujar línea recortada
     */
-
-    return code1 !== 0 ? code1 : code2;
-}
-function calculateIntersection(
-    x1,y1,x2,y2,
-    codeOut,
-    xmin,ymin,xmax,ymax
-){
-
-    let x, y;
-
-    /*
-    Intersección superior
-    */
-    if(codeOut & TOP){
-
-        x = x1 + (x2 - x1) *
-            (ymin - y1) / (y2 - y1);
-
-        y = ymin;
-    }
-
-    /*
-    Intersección inferior
-    */
-    else if(codeOut & BOTTOM){
-
-        x = x1 + (x2 - x1) *
-            (ymax - y1) / (y2 - y1);
-
-        y = ymax;
-    }
-
-    /*
-    Intersección derecha
-    */
-    else if(codeOut & RIGHT){
-
-        y = y1 + (y2 - y1) *
-            (xmax - x1) / (x2 - x1);
-
-        x = xmax;
-    }
-
-    /*
-    Intersección izquierda
-    */
-    else if(codeOut & LEFT){
-
-        y = y1 + (y2 - y1) *
-            (xmin - x1) / (x2 - x1);
-
-        x = xmin;
-    }
-
-    return {x,y};
-}
-function updateLine(
-    line,
-    code1,
-    code2,
-    intersection
-){
-
-    /*
-    Si el primer punto es externo,
-    se reemplaza.
-    */
-    if(code1 !== 0){
-
-        line.x1 = intersection.x;
-        line.y1 = intersection.y;
-    }
-
-    /*
-    Si el segundo punto es externo,
-    se reemplaza.
-    */
-    else{
-
-        line.x2 = intersection.x;
-        line.y2 = intersection.y;
-    }
-
-    return line;
-}
-    /*
-    Mostrar resultado
-    */
-    document.getElementById("info").innerHTML =
-
-        "Resultado: " + result;
-
-    /*
-    Si se acepta trivialmente,
-    dibujar resaltada
-    */
-    if(result === "accept"){
+    if(result.accept){
 
         drawLine(
-            line.x1,
-            line.y1,
-            line.x2,
-            line.y2,
-            "green"
-        );
-    }
-
-    /*
-    Si se rechaza trivialmente,
-    mostrar en rojo
-    */
-    else if(result === "reject"){
-
-        drawLine(
-            line.x1,
-            line.y1,
-            line.x2,
-            line.y2,
+            result.x1,
+            result.y1,
+            result.x2,
+            result.y2,
             "red"
         );
     }
+
+    /*
+    Mostrar información
+    */
+    document.getElementById("info").innerHTML =
+
+        "Escena: " + (escenaActual + 1)
+
+        +
+
+        "<br>Codigo P1: " +
+        result.code1.toString(2).padStart(4,"0")
+
+        +
+
+        "<br>Codigo P2: " +
+        result.code2.toString(2).padStart(4,"0")
+
+        +
+
+        "<br>Aceptada: " +
+        result.accept;
 }
-let intersection = calculateIntersection(
 
-    line.x1,
-    line.y1,
 
-    line.x2,
-    line.y2,
+/* =====================================================
+   NAVEGACIÓN
+   ===================================================== */
 
-    outside,
+function siguiente(){
 
-    xmin,
-    ymin,
-    xmax,
-    ymax
-    line = updateLine(
-    line,
-    code1,
-    code2,
-    intersection
-);
-drawLine(
-    line.x1,
-    line.y1,
-    line.x2,
-    line.y2,
-    "blue"
-);
-);
+    escenaActual++;
+
+    if(escenaActual >= escenas.length){
+        escenaActual = 0;
+    }
+
+    render();
+}
+
+
+function anterior(){
+
+    escenaActual--;
+
+    if(escenaActual < 0){
+        escenaActual = escenas.length - 1;
+    }
+
+    render();
+}
 
 
 /* =====================================================

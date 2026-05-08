@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Cohen-Sutherland</title>
+<title>Algoritmo de Cohen-Sutherland</title>
 
 <style>
 
@@ -22,7 +22,7 @@ input{
 }
 
 button{
-    margin-top:10px;
+    margin:10px;
     padding:8px 15px;
 }
 
@@ -31,30 +31,42 @@ button{
 
 <body>
 
-<h2>Ventana de Recorte</h2>
+<h2>Algoritmo de Cohen-Sutherland</h2>
 
-<!-- Coordenadas de la ventana -->
+<!-- Coordenadas de la ventana de recorte -->
 <div>
 
-Xmin:
-<input id="xmin" type="number" value="100">
+    Xmin:
+    <input id="xmin" type="number" value="100">
 
-Ymin:
-<input id="ymin" type="number" value="100">
+    Ymin:
+    <input id="ymin" type="number" value="100">
 
-Xmax:
-<input id="xmax" type="number" value="400">
+    Xmax:
+    <input id="xmax" type="number" value="400">
 
-Ymax:
-<input id="ymax" type="number" value="400">
+    Ymax:
+    <input id="ymax" type="number" value="400">
 
 </div>
 
-<!-- Botón para actualizar -->
-<button onclick="render()">Actualizar ventana</button>
-<p id="info"></p>
-
 <br>
+
+<!-- Navegación de escenas -->
+<button onclick="anterior()">
+    Anterior
+</button>
+
+<button onclick="siguiente()">
+    Siguiente
+</button>
+
+<button onclick="render()">
+    Actualizar
+</button>
+
+<!-- Información -->
+<p id="info"></p>
 
 <!-- Canvas -->
 <canvas id="canvas" width="600" height="600"></canvas>
