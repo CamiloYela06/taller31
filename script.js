@@ -190,7 +190,19 @@ let outside = getOutsideCode(code1, code2);
     /* =====================================================
    SELECCIONAR PUNTO EXTERNO
    ===================================================== */
-
+line = updateLine(
+    line,
+    code1,
+    code2,
+    intersection
+);
+drawLine(
+    line.x1,
+    line.y1,
+    line.x2,
+    line.y2,
+    "blue"
+);
 function getOutsideCode(code1, code2){
 
     /*
@@ -254,7 +266,35 @@ function calculateIntersection(
 
     return {x,y};
 }
+function updateLine(
+    line,
+    code1,
+    code2,
+    intersection
+){
 
+    /*
+    Si el primer punto es externo,
+    se reemplaza.
+    */
+    if(code1 !== 0){
+
+        line.x1 = intersection.x;
+        line.y1 = intersection.y;
+    }
+
+    /*
+    Si el segundo punto es externo,
+    se reemplaza.
+    */
+    else{
+
+        line.x2 = intersection.x;
+        line.y2 = intersection.y;
+    }
+
+    return line;
+}
     /*
     Mostrar resultado
     */
@@ -306,6 +346,19 @@ let intersection = calculateIntersection(
     ymin,
     xmax,
     ymax
+    line = updateLine(
+    line,
+    code1,
+    code2,
+    intersection
+);
+drawLine(
+    line.x1,
+    line.y1,
+    line.x2,
+    line.y2,
+    "blue"
+);
 );
 
 
