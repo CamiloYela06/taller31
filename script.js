@@ -135,6 +135,7 @@ function render(){
     let ymax = Number(document.getElementById("ymax").value);
 
     drawViewport(xmin,ymin,xmax,ymax);
+    
 
     /*
     Línea de prueba
@@ -199,6 +200,60 @@ function getOutsideCode(code1, code2){
 
     return code1 !== 0 ? code1 : code2;
 }
+function calculateIntersection(
+    x1,y1,x2,y2,
+    codeOut,
+    xmin,ymin,xmax,ymax
+){
+
+    let x, y;
+
+    /*
+    Intersección superior
+    */
+    if(codeOut & TOP){
+
+        x = x1 + (x2 - x1) *
+            (ymin - y1) / (y2 - y1);
+
+        y = ymin;
+    }
+
+    /*
+    Intersección inferior
+    */
+    else if(codeOut & BOTTOM){
+
+        x = x1 + (x2 - x1) *
+            (ymax - y1) / (y2 - y1);
+
+        y = ymax;
+    }
+
+    /*
+    Intersección derecha
+    */
+    else if(codeOut & RIGHT){
+
+        y = y1 + (y2 - y1) *
+            (xmax - x1) / (x2 - x1);
+
+        x = xmax;
+    }
+
+    /*
+    Intersección izquierda
+    */
+    else if(codeOut & LEFT){
+
+        y = y1 + (y2 - y1) *
+            (xmin - x1) / (x2 - x1);
+
+        x = xmin;
+    }
+
+    return {x,y};
+}
 
     /*
     Mostrar resultado
@@ -237,6 +292,21 @@ function getOutsideCode(code1, code2){
         );
     }
 }
+let intersection = calculateIntersection(
+
+    line.x1,
+    line.y1,
+
+    line.x2,
+    line.y2,
+
+    outside,
+
+    xmin,
+    ymin,
+    xmax,
+    ymax
+);
 
 
 /* =====================================================
